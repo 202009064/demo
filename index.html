@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>轮播图，添加五个点</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+        }
+        img{
+            vertical-align: top;
+        }
+        ul{
+            list-style: none;/*去除ul里的黑点*/
+        }
+        .outer{
+            width: 640px;
+            height: 390px;
+            margin: 100px auto;
+            position: relative;/*开启相对定位*/
+        }
+        .img-list{
+            width: 100%;
+            height: 100%;
+        }
+        .img-list li{
+            position: absolute;/*开启绝对定位*/
+            opacity: 0; /*图片透明*/
+            transition: opacity 1s; /*图片从不透明到透明只需要1s*/
+        }
+        li.current{
+            z-index: 9;
+            opacity: 1; /*图片不透明*/
+        }
+        .prev-next a{
+            font-size: 40px; /* 按钮字体大小（箭头大小） */
+            color: rgb(0, 213, 255); /* 箭头颜色 */
+            text-decoration: none; /* 去除链接下划线 */
+            position: absolute; /* 绝对定位，固定在左右两侧 */
+            height: 60px; /*箭头的高度*/
+            top: 0;
+            bottom: 0;
+            margin: auto 0; /* 垂直居中（top和bottom都是0，margin:auto 实现上下居中） */
+            z-index: 99; /* 按钮层级最高，永远显示在图片上面 */
+            opacity: 0.5; /* 默认半透明 */
+            background-color: #61616136;
+        }       
+        .prev-next a:hover{
+            opacity: 1; /* 鼠标悬浮时变不透明（交互反馈） */
+        }
+        #prev{
+            left: 0;
+        }
+        #next{ 
+            right: 0;  /* 右箭头靠最右边 */
+        }
+        /**/
+        .dot{
+            position: absolute; /* 绝对定位，固定在轮播图底部 */
+            bottom: 5px; /* 距离轮播图底部 5px，固定在底部 */
+            /*display: flex;justify-content: center;这两个语句是为了让5个点在一个640*20px的长方形内水平居中（此时可以不需要le0，ri0，ma0，因为这段语句是让长方形水平居中，而不是让五个点水平居中），
+            其实也可以用另一种方法就是将这两段语句替换成width:100px;,这样子就可以将长方形缩小为100*20px，然后再水平居中（此时可以需要le0，ri0，ma0）*/
+            display: flex; /* 弹性布局：让内部的小圆点（a标签）水平并排 */
+            justify-content: center; /* 弹性布局的水平居中：让所有小圆点整体在容器内居中 */
+
+            z-index: 999;
+            left: 0;
+            right: 0;
+            margin: 0 auto;/* 五个点组成那个长方形水平居中（left和right都是0，margin:0 auto 实现左右居中） */
+            
+        }
+        .dot a{
+            float: left;
+            width: 20px;
+            height: 20px;
+            margin: 5px;
+            border-radius: 50%;
+            background-color: #fff;
+            opacity: 0.5;
+        }
+        .dot a:hover, .dot .active{
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="outer">
+        <ul class="img-list">
+            <li class="current"><a href="#"><img src="./img/1.png"></a></li>
+            <li><a href="#"><img src="./img/2.png"></a></li>
+            <li><a href="#"><img src="./img/3.png"></a></li>
+            <li><a href="#"><img src="./img/4.png"></a></li>
+            <li><a href="#"><img src="./img/5.png"></a></li>
+        </ul>
+        <!--设置切换按钮-->
+        <div class="prev-next">
+            <a href="#" id="prev"><</a>
+            <a href="#" id="next">></a>
+        </div>
+        <!--设置导航点-->
+        <div class="dot">
+            <a class="active" href="#"></a>
+            <a href="#"></a>
+            <a href="#"></a>
+            <a href="#"></a>
+            <a href="#"></a>
+        </div>
+    </div>
+    <script>
+        //自动切换图片功能，这里使用了闭包，防止timer变量被其他语句所访问
+        const toggleChange = (function(){
+            let timer = null;
+            return () =>{
+                if(timer === null){
+                    timer = setTimeout(function auto(){
+                        changeImg("next"); //前进
+                        timer = setTimeout(auto, 5000);
+                    }, 5000);
+                }else{
+                    clearTimeout(timer);
+                    timer = null;
+                }
+            }
+        })();
+        toggleChange(); //通过调用的次数来控制是否要开启图片的切换功能
+        const outer = document.getElementsByClassName("outer")[0];
+        outer.addEventListener("mouseenter", ()=>{ //鼠标移入轮播容器时暂停自动切换，
+            toggleChange();
+        })
+        outer.addEventListener("mouseleave", ()=>{ //鼠标移出时恢复自动切换
+            toggleChange();
+        })
+
+
+        //点击按钮切换图片
+        const prev = document.getElementById("prev");
+        const next = document.getElementById("next");
+        //获取所有图片的数组
+        const imgArr = Array.from(document.querySelectorAll(".img-list li"));
+        //获取5个小点
+        const dots = Array.from(document.querySelectorAll(".dot a"));//将集合转换为数组
+        prev.addEventListener("click", ()=>{
+            changeImg("prev"); //后退
+        });
+        next.addEventListener("click", ()=>{
+            changeImg("next"); //前进
+        })
+        //changeImg(dir)用来切换图片，参数dir控制方向
+        function changeImg(dir){
+            //获取当前显示的图片
+            const current = document.querySelector(".img-list .current");
+            
+            let nextprev;
+            if(dir === "next"){ //获取下一张图片
+                nextprev = current.nextElementSibling || document.getElementsByTagName("li")[0];
+            }else if(dir === "prev"){ //获取上一张图片
+                //document.querySelector(".img-list li:last-child")表示img-list类中最后一个li标签
+                nextprev = current.previousElementSibling || document.querySelector(".img-list li:last-child");
+            }else if(typeof dir === "number"){//点击小圆点切换图片
+                nextprev = document.querySelectorAll(".img-list li")[dir]; //获取要切换的图片
+            }
+            //切换显示状态
+            current.classList.remove("current");
+            nextprev.classList.add("current");
+
+            //获取要显示的图片索引
+            const index = imgArr.indexOf(nextprev); //找到 nextprev 元素在数组中的索引
+            //切换active的原点样式，并给“上一张”、“下一张”按钮绑定active样式
+            const currentActive = document.querySelector(".dot .active"); //获取正在显示的点
+            currentActive.classList.remove("active"); //删除正在显示的点
+            dots[index].classList.add("active"); //获取要显示的小点，并添加active样式
+        }
+
+
+        
+        //设置在点击那5个点时的变化样式
+        document.addEventListener("click", (event)=>{
+            const index = dots.indexOf(event.target);
+            if(index !== -1){
+                //点击小圆点切换图片及切换active的原点样式
+                changeImg(index); 
+            }
+        })
+    </script>
+</body>
+</html>
